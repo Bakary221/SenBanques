@@ -39,7 +39,249 @@ class SwaggerServiceProvider extends ServiceProvider
                         "description" => "Serveur de développement"
                     ]
                 ],
+                "security" => [
+                    [
+                        "bearerAuth" => []
+                    ]
+                ],
                 "paths" => [
+                    "/auth/login" => [
+                        "post" => [
+                            "summary" => "Connexion utilisateur",
+                            "description" => "Authentifie un utilisateur et retourne un token d'accès JWT",
+                            "operationId" => "loginUser",
+                            "tags" => ["Authentification"],
+                            "requestBody" => [
+                                "required" => true,
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "required" => ["login", "password"],
+                                            "properties" => [
+                                                "login" => ["type" => "string", "description" => "Login ou email de l'utilisateur", "example" => "admin"],
+                                                "password" => ["type" => "string", "description" => "Mot de passe", "example" => "password123"]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Connexion réussie",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Connexion réussie."],
+                                                    "data" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "user" => [
+                                                                "type" => "object",
+                                                                "properties" => [
+                                                                    "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
+                                                                    "prenom" => ["type" => "string", "example" => "Admin"],
+                                                                    "nom" => ["type" => "string", "example" => "System"],
+                                                                    "email" => ["type" => "string", "example" => "admin@senbanque.com"],
+                                                                    "role" => ["type" => "string", "example" => "admin"]
+                                                                ]
+                                                            ],
+                                                            "access_token" => ["type" => "string", "description" => "Token JWT"],
+                                                            "token_type" => ["type" => "string", "example" => "Bearer"],
+                                                            "expires_in" => ["type" => "integer", "example" => 604800]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "422" => [
+                                    "description" => "Informations d'identification incorrectes",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "message" => ["type" => "string", "example" => "Les informations d'identification sont incorrectes."],
+                                                    "errors" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "login" => ["type" => "array", "items" => ["type" => "string"]]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "403" => [
+                                    "description" => "Compte inactif",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => false],
+                                                    "message" => ["type" => "string", "example" => "Votre compte n'est pas actif."],
+                                                    "error" => ["type" => "string", "example" => "ACCOUNT_INACTIVE"]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "/auth/refresh" => [
+                        "post" => [
+                            "summary" => "Rafraîchir le token d'accès",
+                            "description" => "Génère un nouveau token d'accès et révoque l'ancien",
+                            "operationId" => "refreshToken",
+                            "tags" => ["Authentification"],
+                            "security" => [["bearerAuth" => []]],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Token rafraîchi avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Token rafraîchi avec succès."],
+                                                    "data" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "access_token" => ["type" => "string", "description" => "Nouveau token JWT"],
+                                                            "token_type" => ["type" => "string", "example" => "Bearer"],
+                                                            "expires_in" => ["type" => "integer", "example" => 604800]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "401" => [
+                                    "description" => "Non authentifié",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "message" => ["type" => "string", "example" => "Unauthenticated."]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "/auth/logout" => [
+                        "post" => [
+                            "summary" => "Déconnexion utilisateur",
+                            "description" => "Révoque le token d'accès actuel et déconnecte l'utilisateur",
+                            "operationId" => "logoutUser",
+                            "tags" => ["Authentification"],
+                            "security" => [["bearerAuth" => []]],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Déconnexion réussie",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Déconnexion réussie."]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "401" => [
+                                    "description" => "Non authentifié",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "message" => ["type" => "string", "example" => "Unauthenticated."]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "/auth/user" => [
+                        "get" => [
+                            "summary" => "Informations de l'utilisateur connecté",
+                            "description" => "Récupère les informations détaillées de l'utilisateur actuellement authentifié",
+                            "operationId" => "getCurrentUser",
+                            "tags" => ["Authentification"],
+                            "security" => [["bearerAuth" => []]],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Informations utilisateur récupérées avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "data" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "user" => [
+                                                                "type" => "object",
+                                                                "properties" => [
+                                                                    "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
+                                                                    "prenom" => ["type" => "string", "example" => "Admin"],
+                                                                    "nom" => ["type" => "string", "example" => "System"],
+                                                                    "email" => ["type" => "string", "example" => "admin@senbanque.com"],
+                                                                    "login" => ["type" => "string", "example" => "admin"],
+                                                                    "role" => ["type" => "string", "example" => "admin"],
+                                                                    "statut" => ["type" => "string", "example" => "actif"]
+                                                                ]
+                                                            ],
+                                                            "token_info" => [
+                                                                "type" => "object",
+                                                                "properties" => [
+                                                                    "scopes" => ["type" => "array", "items" => ["type" => "string"]],
+                                                                    "role" => ["type" => "string", "example" => "admin"],
+                                                                    "permissions" => ["type" => "array", "items" => ["type" => "string"]]
+                                                                ]
+                                                            ]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "401" => [
+                                    "description" => "Non authentifié",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "message" => ["type" => "string", "example" => "Unauthenticated."]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
                     "/comptes" => [
                         "get" => [
                             "summary" => "Lister les comptes bancaires",

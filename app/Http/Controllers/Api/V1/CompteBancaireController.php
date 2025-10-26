@@ -29,9 +29,10 @@ class CompteBancaireController extends Controller
      * @OA\Get(
      *     path="/comptes",
      *     summary="Lister les comptes bancaires",
-     *     description="Récupère la liste paginée des comptes bancaires avec possibilité de filtrage",
+     *     description="Récupère la liste paginée des comptes bancaires actifs (type Épargne ou Chèque). Les admins voient tous les comptes, les clients voient uniquement leurs comptes.",
      *     operationId="getComptesBancaires",
      *     tags={"Comptes Bancaires"},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -60,16 +61,6 @@ class CompteBancaireController extends Controller
      *         required=false,
      *         @OA\Schema(type="string")
      *     ),
-     *     @OA\Parameter(
-     *         name="statut",
-     *         in="query",
-     *         description="Filtrer par statut",
-     *         required=false,
-     *         @OA\Schema(
-     *             type="string",
-     *             enum={"actif", "inactif", "bloque"}
-     *         )
-     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Liste des comptes bancaires récupérée avec succès",
@@ -87,7 +78,7 @@ class CompteBancaireController extends Controller
      *                     @OA\Property(property="solde", type="number", format="float", example=1250000),
      *                     @OA\Property(property="devise", type="string", example="FCFA"),
      *                     @OA\Property(property="dateCreation", type="string", format="date-time"),
-     *                     @OA\Property(property="statut", type="string", enum={"actif", "inactif", "bloque"}),
+     *                     @OA\Property(property="statut", type="string", enum={"actif"}),
      *                     @OA\Property(property="motifBlocage", type="string", nullable=true),
      *                     @OA\Property(
      *                         property="metadata",
@@ -116,6 +107,13 @@ class CompteBancaireController extends Controller
      *                 @OA\Property(property="next", type="string", nullable=true),
      *                 @OA\Property(property="prev", type="string", nullable=true)
      *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Non authentifié",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     ),
      *     @OA\Response(
@@ -319,19 +317,33 @@ class CompteBancaireController extends Controller
      */
     public function index(ListComptesRequest $request)
     {
+        $user = auth()->user();
+
         $query = CompteBancaire::with('user')
-            ->when($request->numero, fn($q) => $q->numero($request->numero))
-            ->when($request->telephone, fn($q) => $q->client($request->telephone))
-            ->when($request->statut, fn($q) => $q->statut($request->statut));
+            ->where('statut', 'actif')
+            ->whereIn('type_compte', ['Epargne', 'Chéque']);
+
+        // Si l'utilisateur n'est pas admin, filtrer par ses propres comptes
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+
+        // Appliquer les filtres supplémentaires
+        $query->when($request->numero, fn($q) => $q->numero($request->numero))
+              ->when($request->telephone, fn($q) => $q->client($request->telephone));
 
         $comptes = $query->paginate($request->limit ?? 10);
 
         $pagination = $this->generatePaginationData($comptes);
         $links = $this->generatePaginationLinks($comptes, $request->url());
 
+        $message = $user->role === 'admin'
+            ? 'Comptes bancaires récupérés avec succès'
+            : 'Vos comptes bancaires récupérés avec succès';
+
         return $this->successResponse(
             CompteBancaireResource::collection($comptes),
-            'Comptes bancaires récupérés avec succès',
+            $message,
             200,
             $pagination,
             $links
@@ -352,6 +364,7 @@ class CompteBancaireController extends Controller
                 'statut' => 'actif',
                 'telephone' => $validated['telephone'],
                 'adresse' => $validated['adresse'],
+                'profession' => $validated['profession'],
                 'cni' => $validated['cni'] ?? 'TEMP-' . strtoupper(substr(md5(uniqid()), 0, 8)), // CNI temporaire si non fourni
                 'code' => 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8)), // Générer un code unique
                 'password' => bcrypt('password123'), // Mot de passe temporaire

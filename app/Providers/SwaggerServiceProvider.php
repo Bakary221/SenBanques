@@ -1,0 +1,426 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class SwaggerServiceProvider extends ServiceProvider
+{
+    /**
+     * Register services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap services.
+     */
+    public function boot(): void
+    {
+        $this->app['router']->get('/api/v1/documentation', function () {
+            $content = file_get_contents(resource_path('views/swagger/index.blade.php'));
+            return response()->make($content, 200, ['Content-Type' => 'text/html']);
+        });
+
+        $this->app['router']->get('/api/v1/docs', function () {
+            // Documentation JSON statique pour l'exemple
+            $docs = [
+                "openapi" => "3.0.0",
+                "info" => [
+                    "title" => "API SenBanque",
+                    "version" => "1.0.0",
+                    "description" => "API pour la gestion des comptes bancaires"
+                ],
+                "servers" => [
+                    [
+                        "url" => "http://localhost:8001/api/v1",
+                        "description" => "Serveur de développement"
+                    ]
+                ],
+                "paths" => [
+                    "/comptes" => [
+                        "get" => [
+                            "summary" => "Lister les comptes bancaires",
+                            "description" => "Récupère la liste paginée des comptes bancaires avec possibilité de filtrage",
+                            "operationId" => "getComptesBancaires",
+                            "tags" => ["Comptes Bancaires"],
+                            "parameters" => [
+                                [
+                                    "name" => "page",
+                                    "in" => "query",
+                                    "description" => "Numéro de la page",
+                                    "required" => false,
+                                    "schema" => [
+                                        "type" => "integer",
+                                        "minimum" => 1,
+                                        "default" => 1
+                                    ]
+                                ],
+                                [
+                                    "name" => "limit",
+                                    "in" => "query",
+                                    "description" => "Nombre d'éléments par page",
+                                    "required" => false,
+                                    "schema" => [
+                                        "type" => "integer",
+                                        "minimum" => 1,
+                                        "maximum" => 100,
+                                        "default" => 10
+                                    ]
+                                ],
+                                [
+                                    "name" => "numero",
+                                    "in" => "query",
+                                    "description" => "Filtrer par numéro de compte",
+                                    "required" => false,
+                                    "schema" => [
+                                        "type" => "string"
+                                    ]
+                                ],
+                                [
+                                    "name" => "telephone",
+                                    "in" => "query",
+                                    "description" => "Filtrer par téléphone du client",
+                                    "required" => false,
+                                    "schema" => [
+                                        "type" => "string"
+                                    ]
+                                ],
+                                [
+                                    "name" => "statut",
+                                    "in" => "query",
+                                    "description" => "Filtrer par statut",
+                                    "required" => false,
+                                    "schema" => [
+                                        "type" => "string",
+                                        "enum" => ["actif", "inactif", "bloque"]
+                                    ]
+                                ]
+                            ],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Liste des comptes bancaires récupérée avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Comptes bancaires récupérés avec succès"],
+                                                    "data" => [
+                                                        "type" => "array",
+                                                        "items" => [
+                                                            "type" => "object",
+                                                            "properties" => [
+                                                                "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
+                                                                "numeroCompte" => ["type" => "string", "example" => "C001234"],
+                                                                "titulaire" => ["type" => "string", "example" => "Amadou Diallo"],
+                                                                "type" => ["type" => "string", "enum" => ["Epargne", "Chéque"]],
+                                                                "solde" => ["type" => "number", "format" => "float", "example" => 1250000],
+                                                                "devise" => ["type" => "string", "example" => "FCFA"],
+                                                                "dateCreation" => ["type" => "string", "format" => "date-time"],
+                                                                "statut" => ["type" => "string", "enum" => ["actif", "inactif", "bloque"]],
+                                                                "motifBlocage" => ["type" => "string", "nullable" => true],
+                                                                "metadata" => [
+                                                                    "type" => "object",
+                                                                    "properties" => [
+                                                                        "derniereModification" => ["type" => "string", "format" => "date-time"],
+                                                                        "version" => ["type" => "integer", "example" => 1]
+                                                                    ]
+                                                                ]
+                                                            ]
+                                                        ]
+                                                    ],
+                                                    "pagination" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "currentPage" => ["type" => "integer"],
+                                                            "totalPages" => ["type" => "integer"],
+                                                            "totalItems" => ["type" => "integer"],
+                                                            "itemsPerPage" => ["type" => "integer"],
+                                                            "hasNext" => ["type" => "boolean"],
+                                                            "hasPrevious" => ["type" => "boolean"]
+                                                        ]
+                                                    ],
+                                                    "links" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "self" => ["type" => "string"],
+                                                            "first" => ["type" => "string"],
+                                                            "last" => ["type" => "string"],
+                                                            "next" => ["type" => "string", "nullable" => true],
+                                                            "prev" => ["type" => "string", "nullable" => true]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "422" => [
+                                    "description" => "Données de requête invalides",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => false],
+                                                    "message" => ["type" => "string", "example" => "Données de requête invalides"],
+                                                    "errors" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "page" => ["type" => "array", "items" => ["type" => "string"]],
+                                                            "limit" => ["type" => "array", "items" => ["type" => "string"]]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "post" => [
+                            "summary" => "Créer un nouveau compte bancaire",
+                            "description" => "Crée un nouveau compte bancaire pour un utilisateur existant",
+                            "operationId" => "createCompteBancaire",
+                            "tags" => ["Comptes Bancaires"],
+                            "requestBody" => [
+                                "required" => true,
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "required" => ["user_id", "type_compte"],
+                                            "properties" => [
+                                                "numero" => ["type" => "string", "description" => "Numéro du compte (optionnel, généré automatiquement)", "example" => "C001234"],
+                                                "type_compte" => ["type" => "string", "enum" => ["Epargne", "Chéque"], "description" => "Type de compte"],
+                                                "user_id" => ["type" => "string", "description" => "ID de l'utilisateur propriétaire", "example" => "550e8400-e29b-41d4-a716-446655440000"]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "responses" => [
+                                "201" => [
+                                    "description" => "Compte bancaire créé avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire créé avec succès"],
+                                                    "data" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
+                                                            "numeroCompte" => ["type" => "string", "example" => "C001234"],
+                                                            "titulaire" => ["type" => "string", "example" => "Amadou Diallo"],
+                                                            "type" => ["type" => "string", "enum" => ["Epargne", "Chéque"]],
+                                                            "solde" => ["type" => "number", "format" => "float", "example" => 0],
+                                                            "dateCreation" => ["type" => "string", "format" => "date-time"]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "422" => [
+                                    "description" => "Données invalides",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => false],
+                                                    "message" => ["type" => "string", "example" => "Données invalides"],
+                                                    "errors" => ["type" => "object"]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    "/comptes/{id}" => [
+                        "get" => [
+                            "summary" => "Afficher un compte bancaire",
+                            "description" => "Récupère les détails d'un compte bancaire spécifique",
+                            "operationId" => "getCompteBancaire",
+                            "tags" => ["Comptes Bancaires"],
+                            "parameters" => [
+                                [
+                                    "name" => "id",
+                                    "in" => "path",
+                                    "required" => true,
+                                    "description" => "ID du compte bancaire",
+                                    "schema" => ["type" => "string"]
+                                ]
+                            ],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Détails du compte bancaire récupérés avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire récupéré avec succès"],
+                                                    "data" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
+                                                            "numeroCompte" => ["type" => "string", "example" => "C001234"],
+                                                            "titulaire" => ["type" => "string", "example" => "Amadou Diallo"],
+                                                            "type" => ["type" => "string", "enum" => ["Epargne", "Chéque"]],
+                                                            "solde" => ["type" => "number", "format" => "float", "example" => 1250000],
+                                                            "dateCreation" => ["type" => "string", "format" => "date-time"]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "404" => [
+                                    "description" => "Compte bancaire non trouvé",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => false],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire non trouvé"]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "put" => [
+                            "summary" => "Mettre à jour un compte bancaire",
+                            "description" => "Met à jour les informations d'un compte bancaire",
+                            "operationId" => "updateCompteBancaire",
+                            "tags" => ["Comptes Bancaires"],
+                            "parameters" => [
+                                [
+                                    "name" => "id",
+                                    "in" => "path",
+                                    "required" => true,
+                                    "description" => "ID du compte bancaire",
+                                    "schema" => ["type" => "string"]
+                                ]
+                            ],
+                            "requestBody" => [
+                                "required" => true,
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "numero" => ["type" => "string", "description" => "Numéro du compte", "example" => "C001234"],
+                                                "type_compte" => ["type" => "string", "enum" => ["Epargne", "Chéque"], "description" => "Type de compte"]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Compte bancaire mis à jour avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire mis à jour avec succès"],
+                                                    "data" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
+                                                            "numeroCompte" => ["type" => "string", "example" => "C001234"],
+                                                            "type" => ["type" => "string", "enum" => ["Epargne", "Chéque"]]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "404" => [
+                                    "description" => "Compte bancaire non trouvé",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => false],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire non trouvé"]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "delete" => [
+                            "summary" => "Supprimer un compte bancaire",
+                            "description" => "Supprime un compte bancaire (soft delete)",
+                            "operationId" => "deleteCompteBancaire",
+                            "tags" => ["Comptes Bancaires"],
+                            "parameters" => [
+                                [
+                                    "name" => "id",
+                                    "in" => "path",
+                                    "required" => true,
+                                    "description" => "ID du compte bancaire",
+                                    "schema" => ["type" => "string"]
+                                ]
+                            ],
+                            "responses" => [
+                                "200" => [
+                                    "description" => "Compte bancaire supprimé avec succès",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => true],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire supprimé avec succès"]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ],
+                                "404" => [
+                                    "description" => "Compte bancaire non trouvé",
+                                    "content" => [
+                                        "application/json" => [
+                                            "schema" => [
+                                                "type" => "object",
+                                                "properties" => [
+                                                    "success" => ["type" => "boolean", "example" => false],
+                                                    "message" => ["type" => "string", "example" => "Compte bancaire non trouvé"]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+
+            return response()->json($docs, 200, [], JSON_PRETTY_PRINT);
+        });
+    }
+}

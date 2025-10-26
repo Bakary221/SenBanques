@@ -184,7 +184,7 @@ class SwaggerServiceProvider extends ServiceProvider
                         ],
                         "post" => [
                             "summary" => "Créer un nouveau compte bancaire",
-                            "description" => "Crée un nouveau compte bancaire pour un utilisateur existant",
+                            "description" => "Crée un nouveau compte bancaire avec possibilité de créer un nouveau client ou utiliser un client existant",
                             "operationId" => "createCompteBancaire",
                             "tags" => ["Comptes Bancaires"],
                             "requestBody" => [
@@ -193,11 +193,27 @@ class SwaggerServiceProvider extends ServiceProvider
                                     "application/json" => [
                                         "schema" => [
                                             "type" => "object",
-                                            "required" => ["user_id", "type_compte"],
+                                            "required" => ["type_compte", "solde_initial", "nouveau_client"],
                                             "properties" => [
-                                                "numero" => ["type" => "string", "description" => "Numéro du compte (optionnel, généré automatiquement)", "example" => "C001234"],
-                                                "type_compte" => ["type" => "string", "enum" => ["Epargne", "Chéque"], "description" => "Type de compte"],
-                                                "user_id" => ["type" => "string", "description" => "ID de l'utilisateur propriétaire", "example" => "550e8400-e29b-41d4-a716-446655440000"]
+                                                "numero" => ["type" => "string", "description" => "Numéro du compte (optionnel, généré automatiquement si non fourni)", "example" => "C001234"],
+                                                "type_compte" => ["type" => "string", "enum" => ["Epargne", "Chéque"], "description" => "Type de compte bancaire", "example" => "Epargne"],
+                                                "solde_initial" => ["type" => "number", "format" => "float", "description" => "Solde initial du compte (minimum 10 000)", "example" => 10000],
+                                                "devise" => ["type" => "string", "description" => "Devise du compte", "example" => "FCFA"],
+                                                "nouveau_client" => ["type" => "boolean", "description" => "Indique si un nouveau client doit être créé", "example" => true],
+                                                "client" => [
+                                                    "type" => "object",
+                                                    "description" => "Informations du client (requis si nouveau_client est true)",
+                                                    "properties" => [
+                                                        "prenom" => ["type" => "string", "description" => "Prénom du client", "example" => "Amadou"],
+                                                        "nom" => ["type" => "string", "description" => "Nom du client", "example" => "Diallo"],
+                                                        "email" => ["type" => "string", "format" => "email", "description" => "Email du client", "example" => "amadou.diallo@example.com"],
+                                                        "telephone" => ["type" => "string", "description" => "Téléphone du client (format sénégalais)", "example" => "+221771234567"],
+                                                        "adresse" => ["type" => "string", "description" => "Adresse du client", "example" => "Dakar, Sénégal"],
+                                                        "profession" => ["type" => "string", "description" => "Profession du client", "example" => "Ingénieur"],
+                                                        "cni" => ["type" => "string", "description" => "Numéro CNI (optionnel)", "example" => "1234567890123"]
+                                                    ]
+                                                ],
+                                                "user_id" => ["type" => "string", "description" => "ID de l'utilisateur existant (requis si nouveau_client est false)", "example" => "550e8400-e29b-41d4-a716-446655440000"]
                                             ]
                                         ]
                                     ]
@@ -219,9 +235,10 @@ class SwaggerServiceProvider extends ServiceProvider
                                                             "id" => ["type" => "string", "example" => "550e8400-e29b-41d4-a716-446655440000"],
                                                             "numeroCompte" => ["type" => "string", "example" => "C001234"],
                                                             "titulaire" => ["type" => "string", "example" => "Amadou Diallo"],
-                                                            "type" => ["type" => "string", "enum" => ["Epargne", "Chéque"]],
-                                                            "solde" => ["type" => "number", "format" => "float", "example" => 0],
-                                                            "dateCreation" => ["type" => "string", "format" => "date-time"]
+                                                            "type" => ["type" => "string", "enum" => ["Epargne", "Chéque"], "example" => "Epargne"],
+                                                            "solde" => ["type" => "number", "format" => "float", "example" => 10000],
+                                                            "devise" => ["type" => "string", "example" => "FCFA"],
+                                                            "dateCreation" => ["type" => "string", "format" => "date-time", "example" => "2023-10-26T12:00:00Z"]
                                                         ]
                                                     ]
                                                 ]
@@ -229,16 +246,23 @@ class SwaggerServiceProvider extends ServiceProvider
                                         ]
                                     ]
                                 ],
-                                "422" => [
-                                    "description" => "Données invalides",
+                                "400" => [
+                                    "description" => "Données de requête invalides",
                                     "content" => [
                                         "application/json" => [
                                             "schema" => [
                                                 "type" => "object",
                                                 "properties" => [
                                                     "success" => ["type" => "boolean", "example" => false],
-                                                    "message" => ["type" => "string", "example" => "Données invalides"],
-                                                    "errors" => ["type" => "object"]
+                                                    "message" => ["type" => "string", "example" => "Données de requête invalides"],
+                                                    "errors" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "type_compte" => ["type" => "array", "items" => ["type" => "string"]],
+                                                            "solde_initial" => ["type" => "array", "items" => ["type" => "string"]],
+                                                            "client.email" => ["type" => "array", "items" => ["type" => "string"]]
+                                                        ]
+                                                    ]
                                                 ]
                                             ]
                                         ]

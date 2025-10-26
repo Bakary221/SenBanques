@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 
-class Client extends Model
-{
+class Client extends Model {
     use HasFactory;
 
     protected $fillable = [
@@ -15,8 +14,7 @@ class Client extends Model
         'profession',
     ];
 
-    protected static function boot()
-    {
+    protected static function boot() {
         parent::boot();
 
         static::creating(function ($model) {
@@ -26,13 +24,11 @@ class Client extends Model
         });
     }
 
-    public function user()
-    {
+    public function user() {
         return $this->belongsTo(User::class);
     }
 
-    public function comptesBancaires()
-    {
+    public function comptesBancaires() {
         return $this->hasMany(CompteBancaire::class);
     }
 }

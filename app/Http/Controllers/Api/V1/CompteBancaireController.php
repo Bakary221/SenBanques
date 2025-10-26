@@ -135,48 +135,70 @@ class CompteBancaireController extends Controller
      * )
      *
      * @OA\Post(
-     *     path="/comptes",
-     *     summary="Créer un nouveau compte bancaire",
-     *     description="Crée un nouveau compte bancaire pour un utilisateur existant",
-     *     operationId="createCompteBancaire",
-     *     tags={"Comptes Bancaires"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"user_id", "type_compte"},
-     *             @OA\Property(property="numero", type="string", description="Numéro du compte (optionnel, généré automatiquement)", example="C001234"),
-     *             @OA\Property(property="type_compte", type="string", enum={"Epargne", "Chéque"}, description="Type de compte"),
-     *             @OA\Property(property="user_id", type="string", description="ID de l'utilisateur propriétaire", example="550e8400-e29b-41d4-a716-446655440000")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Compte bancaire créé avec succès",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Compte bancaire créé avec succès"),
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="object",
-     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
-     *                 @OA\Property(property="numeroCompte", type="string", example="C001234"),
-     *                 @OA\Property(property="titulaire", type="string", example="Amadou Diallo"),
-     *                 @OA\Property(property="type", type="string", enum={"Epargne", "Chéque"}),
-     *                 @OA\Property(property="solde", type="number", format="float", example=0),
-     *                 @OA\Property(property="dateCreation", type="string", format="date-time")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Données invalides",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Données invalides"),
-     *             @OA\Property(property="errors", type="object")
-     *         )
-     *     )
-     * )
+      *     path="/comptes",
+      *     summary="Créer un nouveau compte bancaire",
+      *     description="Crée un nouveau compte bancaire avec possibilité de créer un nouveau client ou utiliser un client existant",
+      *     operationId="createCompteBancaire",
+      *     tags={"Comptes Bancaires"},
+      *     @OA\RequestBody(
+      *         required=true,
+      *         @OA\JsonContent(
+      *             required={"type_compte", "solde_initial", "nouveau_client"},
+      *             @OA\Property(property="numero", type="string", description="Numéro du compte (optionnel, généré automatiquement si non fourni)", example="C001234"),
+      *             @OA\Property(property="type_compte", type="string", enum={"Epargne", "Chéque"}, description="Type de compte bancaire", example="Epargne"),
+      *             @OA\Property(property="solde_initial", type="number", format="float", description="Solde initial du compte (minimum 10 000)", example=10000),
+      *             @OA\Property(property="devise", type="string", description="Devise du compte", example="FCFA"),
+      *             @OA\Property(property="nouveau_client", type="boolean", description="Indique si un nouveau client doit être créé", example=true),
+      *             @OA\Property(
+      *                 property="client",
+      *                 type="object",
+      *                 description="Informations du client (requis si nouveau_client est true)",
+      *                 @OA\Property(property="prenom", type="string", description="Prénom du client", example="Amadou"),
+      *                 @OA\Property(property="nom", type="string", description="Nom du client", example="Diallo"),
+      *                 @OA\Property(property="email", type="string", format="email", description="Email du client", example="amadou.diallo@example.com"),
+      *                 @OA\Property(property="telephone", type="string", description="Téléphone du client (format sénégalais)", example="+221771234567"),
+      *                 @OA\Property(property="adresse", type="string", description="Adresse du client", example="Dakar, Sénégal"),
+      *                 @OA\Property(property="profession", type="string", description="Profession du client", example="Ingénieur"),
+      *                 @OA\Property(property="cni", type="string", description="Numéro CNI (optionnel)", example="1234567890123")
+      *             ),
+      *             @OA\Property(property="user_id", type="string", description="ID de l'utilisateur existant (requis si nouveau_client est false)", example="550e8400-e29b-41d4-a716-446655440000")
+      *         )
+      *     ),
+      *     @OA\Response(
+      *         response=201,
+      *         description="Compte bancaire créé avec succès",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=true),
+      *             @OA\Property(property="message", type="string", example="Compte bancaire créé avec succès"),
+      *             @OA\Property(
+      *                 property="data",
+      *                 type="object",
+      *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+      *                 @OA\Property(property="numeroCompte", type="string", example="C001234"),
+      *                 @OA\Property(property="titulaire", type="string", example="Amadou Diallo"),
+      *                 @OA\Property(property="type", type="string", enum={"Epargne", "Chéque"}, example="Epargne"),
+      *                 @OA\Property(property="solde", type="number", format="float", example=10000),
+      *                 @OA\Property(property="devise", type="string", example="FCFA"),
+      *                 @OA\Property(property="dateCreation", type="string", format="date-time", example="2023-10-26T12:00:00Z")
+      *             )
+      *         )
+      *     ),
+      *     @OA\Response(
+      *         response=400,
+      *         description="Données de requête invalides",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=false),
+      *             @OA\Property(property="message", type="string", example="Données de requête invalides"),
+      *             @OA\Property(
+      *                 property="errors",
+      *                 type="object",
+      *                 @OA\Property(property="type_compte", type="array", @OA\Items(type="string")),
+      *                 @OA\Property(property="solde_initial", type="array", @OA\Items(type="string")),
+      *                 @OA\Property(property="client.email", type="array", @OA\Items(type="string"))
+      *             )
+      *         )
+      *     )
+      * )
      *
      * @OA\Get(
      *     path="/comptes/{id}",
@@ -318,7 +340,35 @@ class CompteBancaireController extends Controller
 
     public function store(StoreCompteBancaireRequest $request)
     {
-        $compte = CompteBancaire::create($request->validated());
+        $validated = $request->validated();
+
+        // Créer l'utilisateur si nouveau_client est true
+        if ($validated['nouveau_client']) {
+            $user = \App\Models\User::create([
+                'prenom' => $validated['prenom'],
+                'nom' => $validated['nom'],
+                'login' => $validated['email'], // Utiliser l'email comme login
+                'email' => $validated['email'],
+                'statut' => 'actif',
+                'telephone' => $validated['telephone'],
+                'adresse' => $validated['adresse'],
+                'cni' => $validated['cni'] ?? 'TEMP-' . strtoupper(substr(md5(uniqid()), 0, 8)), // CNI temporaire si non fourni
+                'code' => 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8)), // Générer un code unique
+                'password' => bcrypt('password123'), // Mot de passe temporaire
+            ]);
+            $validated['user_id'] = $user->id;
+        }
+
+        // Créer le compte bancaire
+        $compte = CompteBancaire::create([
+            'numero' => $validated['numero'] ?? null,
+            'type_compte' => $validated['type_compte'],
+            'statut' => 'actif',
+            'user_id' => $validated['user_id'],
+        ]);
+
+        // Déclencher l'événement de création du compte
+        \App\Events\CompteBancaireCree::dispatch($user, $compte, 'password123');
 
         return $this->successResponse(
             new CompteBancaireResource($compte->load('user')),

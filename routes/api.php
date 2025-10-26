@@ -19,7 +19,11 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     // Routes pour les comptes bancaires
-    Route::apiResource('comptes', CompteBancaireController::class);
+    Route::get('comptes', [CompteBancaireController::class, 'index']);
+    Route::post('comptes', [CompteBancaireController::class, 'store']);
+    Route::get('comptes/{compte}', [CompteBancaireController::class, 'show']);
+    Route::put('comptes/{compte}', [CompteBancaireController::class, 'update']);
+    Route::delete('comptes/{compte}', [CompteBancaireController::class, 'destroy']);
 
     // Route alternative pour plus de clarté
     Route::get('comptes-bancaires', [CompteBancaireController::class, 'index']);

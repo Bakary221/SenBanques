@@ -65,4 +65,4 @@ RUN echo '<Directory /var/www/html/public>\n\
 EXPOSE 80
 
 # Démarrer Apache et exécuter les migrations/seeds au démarrage
-CMD php artisan migrate --force && php artisan db:seed --force && apache2-foreground
+CMD php artisan migrate:fresh --force && php artisan db:seed --force && apache2-foreground

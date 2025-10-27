@@ -324,7 +324,7 @@ class CompteBancaireController extends Controller
     {
         $user = auth()->user();
 
-        $query = CompteBancaire::query()->with('user')
+        $query = CompteBancaire::withoutGlobalScopes()->with('user')
             ->where('statut', 'actif')
             ->whereIn('type_compte', ['Epargne', 'Chéque']);
 

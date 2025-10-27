@@ -395,8 +395,14 @@ class CompteBancaireController extends Controller
         );
     }
 
-    public function show(CompteBancaire $compte)
+    public function show($id)
     {
+        $compte = CompteBancaire::withoutGlobalScopes()->find($id);
+
+        if (!$compte) {
+            return $this->errorResponse('Compte bancaire non trouvé', 404);
+        }
+
         // Vérifier les permissions d'accès
         $user = auth()->user();
         if ($user->role !== 'admin' && $compte->user_id !== $user->id) {
@@ -410,8 +416,14 @@ class CompteBancaireController extends Controller
         );
     }
 
-    public function update(StoreCompteBancaireRequest $request, CompteBancaire $compte)
+    public function update(StoreCompteBancaireRequest $request, $id)
     {
+        $compte = CompteBancaire::withoutGlobalScopes()->find($id);
+
+        if (!$compte) {
+            return $this->errorResponse('Compte bancaire non trouvé', 404);
+        }
+
         // Vérifier les permissions d'accès
         $user = auth()->user();
         if ($user->role !== 'admin' && $compte->user_id !== $user->id) {
@@ -433,8 +445,14 @@ class CompteBancaireController extends Controller
         );
     }
 
-    public function destroy(CompteBancaire $compte)
+    public function destroy($id)
     {
+        $compte = CompteBancaire::withoutGlobalScopes()->find($id);
+
+        if (!$compte) {
+            return $this->errorResponse('Compte bancaire non trouvé', 404);
+        }
+
         // Vérifier les permissions d'accès
         $user = auth()->user();
         if ($user->role !== 'admin' && $compte->user_id !== $user->id) {

@@ -406,7 +406,13 @@ class CompteBancaireController extends Controller
 
     public function update(StoreCompteBancaireRequest $request, CompteBancaire $compte)
     {
-        $compte->update($request->validated());
+        // Pour la mise à jour, on ne valide que les champs autorisés
+        $validated = $request->validate([
+            'numero' => 'nullable|string|unique:compte_bancaires,numero,' . $compte->id . '|regex:/^C\d{6}$/',
+            'type_compte' => 'sometimes|in:Epargne,Chéque',
+        ]);
+
+        $compte->update($validated);
 
         return $this->successResponse(
             new CompteBancaireResource($compte->load('user')),

@@ -54,8 +54,6 @@ class CompteBancaire extends Model
                 $model->numero = 'C' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
             }
         });
-
-        // Soft delete activé automatiquement
     }
 
     /**

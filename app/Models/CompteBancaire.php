@@ -42,7 +42,7 @@ class CompteBancaire extends Model
 
             // Générer le numéro automatiquement si non fourni
             if (empty($model->numero)) {
-                $lastAccount = static::orderBy('numero', 'desc')->first();
+                $lastAccount = static::withTrashed()->orderBy('numero', 'desc')->first();
 
                 if ($lastAccount) {
                     $lastNumber = (int) substr($lastAccount->numero, 1);

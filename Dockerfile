@@ -71,4 +71,4 @@ RUN echo '<Directory /var/www/html/public>\n\
 EXPOSE 80
 
 # Démarrer Apache et exécuter les migrations/fresh + seeds + Passport keys au runtime
-CMD mkdir -p storage/oauth && php artisan passport:keys --force && php artisan migrate:fresh --force && php artisan db:seed --force && apache2-foreground
+CMD mkdir -p storage/oauth && php artisan passport:install --force && php artisan migrate:fresh --force && php artisan db:seed --force && apache2-foreground

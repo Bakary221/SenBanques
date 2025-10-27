@@ -28,7 +28,7 @@ class StoreCompteBancaireRequest extends FormRequest
             'numero' => 'nullable|string|unique:compte_bancaires,numero|regex:/^C\d{6}$/',
             'type_compte' => 'required|in:Epargne,Chéque',
             'solde_initial' => 'required|numeric|min:10000',
-            'nouveau_client' => 'boolean',
+            'nouveau_client' => 'required|boolean',
         ];
 
         // Validation conditionnelle pour les champs client

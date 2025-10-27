@@ -35,6 +35,9 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer require fakerphp/faker --no-interaction
 # Générer la clé d'application Laravel
 RUN php artisan key:generate --force
 
+# Générer les clés Passport
+RUN php artisan passport:keys --force
+
 # Créer le lien symbolique du storage si nécessaire
 RUN php artisan storage:link || true
 

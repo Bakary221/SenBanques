@@ -446,20 +446,14 @@ class SwaggerServiceProvider extends ServiceProvider
                                                 "solde_initial" => ["type" => "number", "format" => "float", "description" => "Solde initial du compte (minimum 10 000)", "example" => 10000],
                                                 "devise" => ["type" => "string", "description" => "Devise du compte", "example" => "FCFA"],
                                                 "nouveau_client" => ["type" => "boolean", "description" => "Indique si un nouveau client doit être créé", "example" => true],
-                                                "client" => [
-                                                    "type" => "object",
-                                                    "description" => "Informations du client (requis si nouveau_client est true)",
-                                                    "properties" => [
-                                                        "prenom" => ["type" => "string", "description" => "Prénom du client", "example" => "Amadou"],
-                                                        "nom" => ["type" => "string", "description" => "Nom du client", "example" => "Diallo"],
-                                                        "email" => ["type" => "string", "format" => "email", "description" => "Email du client", "example" => "amadou.diallo@example.com"],
-                                                        "telephone" => ["type" => "string", "description" => "Téléphone du client (format sénégalais)", "example" => "+221771234567"],
-                                                        "adresse" => ["type" => "string", "description" => "Adresse du client", "example" => "Dakar, Sénégal"],
-                                                        "profession" => ["type" => "string", "description" => "Profession du client", "example" => "Ingénieur"],
-                                                        "cni" => ["type" => "string", "description" => "Numéro CNI (optionnel)", "example" => "1234567890123"]
-                                                    ]
-                                                ],
-                                                "user_id" => ["type" => "string", "description" => "ID de l'utilisateur existant (requis si nouveau_client est false)", "example" => "550e8400-e29b-41d4-a716-446655440000"]
+                                                "prenom" => ["type" => "string", "description" => "Prénom du client (requis si nouveau_client=true)", "example" => "Amadou"],
+                                                "nom" => ["type" => "string", "description" => "Nom du client (requis si nouveau_client=true)", "example" => "Diallo"],
+                                                "email" => ["type" => "string", "format" => "email", "description" => "Email du client (requis si nouveau_client=true)", "example" => "amadou.diallo@example.com"],
+                                                "telephone" => ["type" => "string", "description" => "Téléphone du client (format sénégalais, requis si nouveau_client=true)", "example" => "771234567"],
+                                                "adresse" => ["type" => "string", "description" => "Adresse du client (requis si nouveau_client=true)", "example" => "Dakar, Sénégal"],
+                                                "profession" => ["type" => "string", "description" => "Profession du client (requis si nouveau_client=true)", "example" => "Ingénieur"],
+                                                "cni" => ["type" => "string", "description" => "Numéro CNI (optionnel)", "example" => "1234567890123"],
+                                                "user_id" => ["type" => "string", "description" => "ID de l'utilisateur existant (requis si nouveau_client=false)", "example" => "550e8400-e29b-41d4-a716-446655440000"]
                                             ]
                                         ]
                                     ]

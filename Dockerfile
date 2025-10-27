@@ -26,8 +26,11 @@ WORKDIR /var/www/html
 # Créer un .env si inexistant
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
-# Installer les dépendances PHP
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
+# Installer les dépendances PHP (y compris dev pour Faker)
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-interaction
+
+# Installer Faker globalement si nécessaire
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer require fakerphp/faker --no-interaction
 
 # Générer la clé d'application Laravel
 RUN php artisan key:generate --force
@@ -64,5 +67,5 @@ RUN echo '<Directory /var/www/html/public>\n\
 # Exposer le port 80
 EXPOSE 80
 
-# Démarrer Apache et exécuter les migrations/seeds au démarrage
+# Démarrer Apache et exécuter les migrations/fresh + seeds au démarrage
 CMD php artisan migrate:fresh --force && php artisan db:seed --force && apache2-foreground

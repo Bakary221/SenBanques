@@ -17,6 +17,11 @@ use App\Traits\ApiResponseTrait;
  * )
  *
  * @OA\Server(
+ *     url="https://senbanques-2.onrender.com/",
+ *     description="Serveur de Production"
+ * )
+ * 
+ * * @OA\Server(
  *     url="http://localhost:8001/api/v1",
  *     description="Serveur de développement"
  * )

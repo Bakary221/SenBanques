@@ -35,6 +35,10 @@ class SwaggerServiceProvider extends ServiceProvider
                 ],
                 "servers" => [
                     [
+                        "url" => "https://senbanques-2.onrender.com/api/v1",
+                        "description" => "Serveur de Production"
+                    ],
+                    [
                         "url" => "http://localhost:8001/api/v1",
                         "description" => "Serveur de développement"
                     ]

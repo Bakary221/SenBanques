@@ -5,11 +5,12 @@ namespace App\Models;
 use App\Casts\Solde;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class CompteBancaire extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'compte_bancaires';
 
@@ -54,10 +55,7 @@ class CompteBancaire extends Model
             }
         });
 
-        // Scope global : exclure les comptes supprimés (soft delete si implémenté)
-        static::addGlobalScope('active', function ($builder) {
-            // Pour l'instant, pas de soft delete, mais prêt pour l'implémentation future
-        });
+        // Soft delete activé automatiquement
     }
 
     /**

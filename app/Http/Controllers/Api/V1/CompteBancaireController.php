@@ -324,7 +324,7 @@ class CompteBancaireController extends Controller
     {
         $user = auth()->user();
 
-        $query = CompteBancaire::with('user')
+        $query = CompteBancaire::query()->with('user')
             ->where('statut', 'actif')
             ->whereIn('type_compte', ['Epargne', 'Chéque']);
 
@@ -397,6 +397,12 @@ class CompteBancaireController extends Controller
 
     public function show(CompteBancaire $compte)
     {
+        // Vérifier les permissions d'accès
+        $user = auth()->user();
+        if ($user->role !== 'admin' && $compte->user_id !== $user->id) {
+            return $this->errorResponse('Accès non autorisé à ce compte', 403);
+        }
+
         return $this->successResponse(
             new CompteBancaireResource($compte->load('user')),
             'Compte bancaire récupéré avec succès',
@@ -406,6 +412,12 @@ class CompteBancaireController extends Controller
 
     public function update(StoreCompteBancaireRequest $request, CompteBancaire $compte)
     {
+        // Vérifier les permissions d'accès
+        $user = auth()->user();
+        if ($user->role !== 'admin' && $compte->user_id !== $user->id) {
+            return $this->errorResponse('Accès non autorisé à ce compte', 403);
+        }
+
         // Pour la mise à jour, on ne valide que les champs autorisés
         $validated = $request->validate([
             'numero' => 'nullable|string|unique:compte_bancaires,numero,' . $compte->id . '|regex:/^C\d{6}$/',
@@ -423,6 +435,12 @@ class CompteBancaireController extends Controller
 
     public function destroy(CompteBancaire $compte)
     {
+        // Vérifier les permissions d'accès
+        $user = auth()->user();
+        if ($user->role !== 'admin' && $compte->user_id !== $user->id) {
+            return $this->errorResponse('Accès non autorisé à ce compte', 403);
+        }
+
         $compte->delete();
 
         return $this->successResponse(

@@ -40,7 +40,7 @@ Route::prefix('v1')->group(function () {
     Route::post('comptes', [CompteBancaireController::class, 'store']);
 
     // Routes admin seulement (avec vérification de rôle)
-    Route::middleware(['auth:api', 'auth.middleware', 'role:admin'])->group(function () {
+    Route::middleware(['auth:api', 'role:admin'])->group(function () {
         // Routes spécifiques aux administrateurs
         Route::get('admin/users', function () {
             return response()->json(['message' => 'Liste des utilisateurs (admin seulement)']);

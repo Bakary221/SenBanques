@@ -459,7 +459,14 @@ class CompteBancaireController extends Controller
             return $this->errorResponse('Accès non autorisé à ce compte', 403);
         }
 
-        $compte->delete();
+        // Pour la suppression, on fait une suppression physique temporairement
+        // jusqu'à ce que la migration soft delete soit appliquée
+        try {
+            $compte->delete();
+        } catch (\Exception $e) {
+            // Si la colonne deleted_at n'existe pas, on fait une suppression physique
+            $compte->forceDelete();
+        }
 
         return $this->successResponse(
             null,

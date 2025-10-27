@@ -13,35 +13,41 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Créer un utilisateur admin
-        User::create([
-            'prenom' => 'Admin',
-            'nom' => 'System',
-            'login' => 'admin',
-            'email' => 'admin@senbanque.com',
-            'password' => bcrypt('password'),
-            'statut' => 'actif',
-            'role' => 'admin',
-            'telephone' => '771234567',
-            'adresse' => 'Dakar, Sénégal',
-            'cni' => 'TEMP-ADMIN-001',
-        ]);
+        // Créer un utilisateur admin avec identifiants fixes
+        User::updateOrCreate(
+            ['login' => 'admin'],
+            [
+                'prenom' => 'Admin',
+                'nom' => 'System',
+                'email' => 'admin@senbanque.com',
+                'password' => bcrypt('admin123'),
+                'statut' => 'actif',
+                'role' => 'admin',
+                'telephone' => '771234567',
+                'adresse' => 'Dakar, Sénégal',
+                'cni' => 'TEMP-ADMIN-001',
+            ]
+        );
 
-        // Créer un utilisateur client
-        User::create([
-            'prenom' => 'Client',
-            'nom' => 'Test',
-            'login' => 'client',
-            'email' => 'client@senbanque.com',
-            'password' => bcrypt('password'),
-            'statut' => 'actif',
-            'role' => 'client',
-            'telephone' => '781234567',
-            'adresse' => 'Dakar, Sénégal',
-            'cni' => 'TEMP-CLIENT-001',
-        ]);
+        // Créer un utilisateur client avec identifiants fixes
+        User::updateOrCreate(
+            ['login' => 'client'],
+            [
+                'prenom' => 'Client',
+                'nom' => 'Test',
+                'email' => 'client@senbanque.com',
+                'password' => bcrypt('client123'),
+                'statut' => 'actif',
+                'role' => 'client',
+                'telephone' => '781234567',
+                'adresse' => 'Dakar, Sénégal',
+                'cni' => 'TEMP-CLIENT-001',
+            ]
+        );
 
-        // Créer d'autres utilisateurs de test
-        User::factory()->count(8)->create();
+        // Créer d'autres utilisateurs de test seulement en développement
+        if (app()->environment('local')) {
+            User::factory()->count(8)->create();
+        }
     }
 }

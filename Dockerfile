@@ -32,6 +32,10 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 # Générer la clé d'application Laravel
 RUN php artisan key:generate --force
 
+# Reset + Migrations + Seeds à chaque déploiement
+RUN php artisan migrate:refresh --force
+RUN php artisan db:seed --force
+
 # Créer le lien symbolique du storage si nécessaire
 RUN php artisan storage:link || true
 

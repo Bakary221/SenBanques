@@ -316,8 +316,8 @@ class AuthController extends Controller
                 ],
                 'token_info' => [
                     'scopes' => $token->scopes,
-                    'role' => $token->getClaim('role'),
-                    'permissions' => $token->getClaim('permissions'),
+                    'role' => $user->role ?? 'client',
+                    'permissions' => $this->getUserPermissions($user),
                 ]
             ]
         ]);

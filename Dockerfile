@@ -32,10 +32,6 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
 # Générer la clé d'application Laravel
 RUN php artisan key:generate --force
 
-# Reset + Migrations + Seeds à chaque déploiement
-RUN php artisan migrate:refresh --force
-RUN php artisan db:seed --force
-
 # Créer le lien symbolique du storage si nécessaire
 RUN php artisan storage:link || true
 
@@ -68,5 +64,5 @@ RUN echo '<Directory /var/www/html/public>\n\
 # Exposer le port 80
 EXPOSE 80
 
-# Démarrer Apache
-CMD ["apache2-foreground"]
+# Démarrer Apache et exécuter les migrations/seeds au démarrage
+CMD php artisan migrate --force && php artisan db:seed --force && apache2-foreground

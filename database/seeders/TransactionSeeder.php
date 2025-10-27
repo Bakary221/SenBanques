@@ -12,8 +12,8 @@ class TransactionSeeder extends Seeder
      */
     public function run(): void
     {
-        // Créer des transactions pour chaque compte bancaire existant
-        $comptes = \App\Models\CompteBancaire::all();
+        // Créer des transactions pour chaque compte bancaire existant (incluant les soft deleted)
+        $comptes = \App\Models\CompteBancaire::withTrashed()->get();
         foreach ($comptes as $compte) {
             \App\Models\Transaction::factory()->count(5)->create([
                 'compte_bancaire_id' => $compte->id,

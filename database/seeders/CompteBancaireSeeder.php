@@ -12,6 +12,18 @@ class CompteBancaireSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\CompteBancaire::factory()->count(20)->create();
+        // Créer des comptes pour l'utilisateur client de test
+        $clientUser = \App\Models\User::where('login', 'client')->first();
+        if ($clientUser) {
+            \App\Models\CompteBancaire::factory()->count(3)->create([
+                'user_id' => $clientUser->id,
+                'statut' => 'actif'
+            ]);
+        }
+
+        // Créer d'autres comptes de test seulement en développement
+        if (app()->environment('local')) {
+            \App\Models\CompteBancaire::factory()->count(17)->create();
+        }
     }
 }

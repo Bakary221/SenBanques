@@ -22,11 +22,16 @@ class CompteBancaire extends Model
         'type_compte',
         'statut',
         'motif_blocage',
+        'date_debut_blocage',
+        'date_fin_blocage',
+        'statut_archive',
         'user_id',
     ];
 
     protected $casts = [
         'solde' => Solde::class,
+        'date_debut_blocage' => 'datetime',
+        'date_fin_blocage' => 'datetime',
     ];
 
     protected $appends = ['solde'];
@@ -34,6 +39,11 @@ class CompteBancaire extends Model
     protected static function boot()
     {
         parent::boot();
+
+        // Scope global pour exclure les comptes bloqués et fermés
+        static::addGlobalScope('active', function ($builder) {
+            $builder->whereNotIn('statut', ['bloque', 'ferme']);
+        });
 
         static::creating(function ($model) {
             if (!$model->id) {
@@ -98,12 +108,52 @@ class CompteBancaire extends Model
     }
 
     /**
-     * Bloquer un compte
+     * Bloquer un compte (seulement pour les comptes épargne actifs)
      */
-    public function bloquer(string $motif): bool
+    public function bloquer(string $motif, $dateDebut = null, $dateFin = null): bool
     {
+        if ($this->type_compte !== 'Epargne' || !$this->estActif()) {
+            return false;
+        }
+
         $this->statut = 'bloque';
         $this->motif_blocage = $motif;
+        $this->date_debut_blocage = $dateDebut ?? now();
+        $this->date_fin_blocage = $dateFin;
+        return $this->save();
+    }
+
+    /**
+     * Débloquer un compte
+     */
+    public function debloquer(): bool
+    {
+        $this->statut = 'actif';
+        $this->motif_blocage = null;
+        $this->date_debut_blocage = null;
+        $this->date_fin_blocage = null;
+        return $this->save();
+    }
+
+    /**
+     * Archiver un compte (seulement pour les comptes épargne bloqués)
+     */
+    public function archiver(): bool
+    {
+        if ($this->type_compte !== 'Epargne' || !$this->estBloque()) {
+            return false;
+        }
+
+        $this->statut_archive = 'archive';
+        return $this->save();
+    }
+
+    /**
+     * Désarchiver un compte
+     */
+    public function desarchiver(): bool
+    {
+        $this->statut_archive = 'actif';
         return $this->save();
     }
 
@@ -114,6 +164,8 @@ class CompteBancaire extends Model
     {
         $this->statut = 'actif';
         $this->motif_blocage = null;
+        $this->date_debut_blocage = null;
+        $this->date_fin_blocage = null;
         return $this->save();
     }
 
@@ -124,6 +176,20 @@ class CompteBancaire extends Model
     {
         $this->statut = 'inactif';
         $this->motif_blocage = null;
+        $this->date_debut_blocage = null;
+        $this->date_fin_blocage = null;
+        return $this->save();
+    }
+
+    /**
+     * Fermer un compte
+     */
+    public function fermer(): bool
+    {
+        $this->statut = 'ferme';
+        $this->motif_blocage = null;
+        $this->date_debut_blocage = null;
+        $this->date_fin_blocage = null;
         return $this->save();
     }
 
@@ -141,6 +207,38 @@ class CompteBancaire extends Model
     public function estBloque(): bool
     {
         return $this->statut === 'bloque';
+    }
+
+    /**
+     * Vérifier si le compte est fermé
+     */
+    public function estFerme(): bool
+    {
+        return $this->statut === 'ferme';
+    }
+
+    /**
+     * Vérifier si le compte est archivé
+     */
+    public function estArchive(): bool
+    {
+        return $this->statut_archive === 'archive';
+    }
+
+    /**
+     * Vérifier si le compte peut être bloqué (seulement épargne actif)
+     */
+    public function peutEtreBloque(): bool
+    {
+        return $this->type_compte === 'Epargne' && $this->estActif();
+    }
+
+    /**
+     * Vérifier si le compte peut être archivé (seulement épargne bloqué)
+     */
+    public function peutEtreArchive(): bool
+    {
+        return $this->type_compte === 'Epargne' && $this->estBloque();
     }
 
     /**

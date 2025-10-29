@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('compte_bancaires', function (Blueprint $table) {
-            //
+            $table->softDeletes();
+            $table->timestamp('date_debut_blocage')->nullable();
+            $table->timestamp('date_fin_blocage')->nullable();
+            $table->enum('statut_archive', ['actif', 'archive'])->default('actif');
         });
     }
 
@@ -23,6 +26,7 @@ return new class extends Migration
     {
         Schema::table('compte_bancaires', function (Blueprint $table) {
             $table->dropSoftDeletes();
+            $table->dropColumn(['date_debut_blocage', 'date_fin_blocage', 'statut_archive']);
         });
     }
 };

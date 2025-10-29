@@ -8,6 +8,8 @@ use App\Http\Requests\StoreCompteBancaireRequest;
 use App\Http\Resources\CompteBancaireResource;
 use App\Models\CompteBancaire;
 use App\Traits\ApiResponseTrait;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Info(
@@ -65,6 +67,13 @@ class CompteBancaireController extends Controller
      *         description="Filtrer par téléphone du client",
      *         required=false,
      *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="type_compte",
+     *         in="query",
+     *         description="Filtrer par type de compte (Epargne ou Chéque)",
+     *         required=false,
+     *         @OA\Schema(type="string", enum={"Epargne", "Chéque"})
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -288,6 +297,39 @@ class CompteBancaireController extends Controller
      *         )
      *     )
      * )
+     /**
+      * @OA\Post(
+      *     path="/comptes/setup-database",
+      *     summary="Initialiser la base de données",
+      *     description="Exécute les migrations et seeders pour initialiser la base de données",
+      *     operationId="setupDatabase",
+      *     tags={"Administration"},
+      *     security={{"bearerAuth":{}}},
+      *     @OA\Response(
+      *         response=200,
+      *         description="Base de données initialisée avec succès",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=true),
+      *             @OA\Property(property="message", type="string", example="Base de données initialisée avec succès"),
+      *             @OA\Property(
+      *                 property="data",
+      *                 type="object",
+      *                 @OA\Property(property="migrations", type="string", example="Migrations exécutées"),
+      *                 @OA\Property(property="seeders", type="string", example="Seeders exécutés")
+      *             )
+      *         )
+      *     ),
+      *     @OA\Response(
+      *         response=403,
+      *         description="Accès non autorisé - Réservé aux administrateurs",
+      *         @OA\JsonContent(
+      *             @OA\Property(property="success", type="boolean", example=false),
+      *             @OA\Property(property="message", type="string", example="Accès non autorisé")
+      *         )
+      *     )
+      * )
+      *
+      * @OA\Delete(
      *
      * @OA\Delete(
      *     path="/comptes/{id}",
@@ -324,8 +366,8 @@ class CompteBancaireController extends Controller
     {
         $user = auth()->user();
 
-        $query = CompteBancaire::withoutGlobalScopes()->with('user')
-            ->where('statut', 'actif')
+        // Utiliser le scope global qui exclut déjà les comptes bloqués et fermés
+        $query = CompteBancaire::with('user')
             ->whereIn('type_compte', ['Epargne', 'Chéque']);
 
         // Si l'utilisateur n'est pas admin, filtrer par ses propres comptes
@@ -335,7 +377,8 @@ class CompteBancaireController extends Controller
 
         // Appliquer les filtres supplémentaires
         $query->when($request->numero, fn($q) => $q->numero($request->numero))
-              ->when($request->telephone, fn($q) => $q->client($request->telephone));
+              ->when($request->telephone, fn($q) => $q->client($request->telephone))
+              ->when($request->type_compte, fn($q) => $q->where('type_compte', $request->type_compte));
 
         $comptes = $query->paginate($request->limit ?? 10);
 
@@ -359,40 +402,51 @@ class CompteBancaireController extends Controller
     {
         $validated = $request->validated();
 
-        // Créer l'utilisateur si nouveau_client est true
-        if ($validated['nouveau_client']) {
-            $user = \App\Models\User::create([
-                'prenom' => $validated['prenom'],
-                'nom' => $validated['nom'],
-                'login' => $validated['email'], // Utiliser l'email comme login
-                'email' => $validated['email'],
+        return DB::transaction(function () use ($validated) {
+            // Vérifier si le client existe à partir de son numéro de téléphone
+            $user = null;
+            if (isset($validated['telephone'])) {
+                $user = \App\Models\User::where('telephone', $validated['telephone'])->first();
+            }
+
+            // Si nouveau_client est true ou si le client n'existe pas, créer un nouveau client
+            if ($validated['nouveau_client'] || !$user) {
+                if (!$validated['nouveau_client'] && !$user) {
+                    return $this->errorResponse('Client non trouvé avec ce numéro de téléphone. Veuillez créer un nouveau client.', 400);
+                }
+
+                $user = \App\Models\User::create([
+                    'prenom' => $validated['prenom'],
+                    'nom' => $validated['nom'],
+                    'login' => $validated['email'], // Utiliser l'email comme login
+                    'email' => $validated['email'],
+                    'statut' => 'actif',
+                    'telephone' => $validated['telephone'],
+                    'adresse' => $validated['adresse'],
+                    'profession' => $validated['profession'],
+                    'cni' => $validated['cni'] ?? 'TEMP-' . strtoupper(substr(md5(uniqid()), 0, 8)), // CNI temporaire si non fourni
+                    'code' => 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8)), // Générer un code unique
+                    'password' => bcrypt('password123'), // Mot de passe temporaire
+                ]);
+            }
+
+            // Créer le compte bancaire
+            $compte = CompteBancaire::create([
+                'numero' => $validated['numero'] ?? null,
+                'type_compte' => $validated['type_compte'],
                 'statut' => 'actif',
-                'telephone' => $validated['telephone'],
-                'adresse' => $validated['adresse'],
-                'profession' => $validated['profession'],
-                'cni' => $validated['cni'] ?? 'TEMP-' . strtoupper(substr(md5(uniqid()), 0, 8)), // CNI temporaire si non fourni
-                'code' => 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8)), // Générer un code unique
-                'password' => bcrypt('password123'), // Mot de passe temporaire
+                'user_id' => $user->id,
             ]);
-            $validated['user_id'] = $user->id;
-        }
 
-        // Créer le compte bancaire
-        $compte = CompteBancaire::create([
-            'numero' => $validated['numero'] ?? null,
-            'type_compte' => $validated['type_compte'],
-            'statut' => 'actif',
-            'user_id' => $validated['user_id'],
-        ]);
+            // Déclencher l'événement de création du compte
+            \App\Events\CompteBancaireCree::dispatch($user, $compte, 'password123');
 
-        // Déclencher l'événement de création du compte
-        \App\Events\CompteBancaireCree::dispatch($user, $compte, 'password123');
-
-        return $this->successResponse(
-            new CompteBancaireResource($compte->load('user')),
-            'Compte bancaire créé avec succès',
-            201
-        );
+            return $this->successResponse(
+                new CompteBancaireResource($compte->load('user')),
+                'Compte bancaire créé avec succès',
+                201
+            );
+        });
     }
 
     public function show($id)
@@ -409,8 +463,19 @@ class CompteBancaireController extends Controller
             return $this->errorResponse('Accès non autorisé à ce compte', 403);
         }
 
+        // Pour les comptes épargne, ajouter les informations de blocage
+        $compteData = $compte->load('user');
+        if ($compte->type_compte === 'Epargne') {
+            $compteData->blocage_info = [
+                'date_debut' => $compte->date_debut_blocage?->toISOString(),
+                'date_fin' => $compte->date_fin_blocage?->toISOString(),
+                'motif' => $compte->motif_blocage,
+                'est_bloque' => $compte->estBloque(),
+            ];
+        }
+
         return $this->successResponse(
-            new CompteBancaireResource($compte->load('user')),
+            new CompteBancaireResource($compteData),
             'Compte bancaire récupéré avec succès',
             200
         );
@@ -445,6 +510,31 @@ class CompteBancaireController extends Controller
         );
     }
 
+    public function setupDatabase()
+    {
+        // Vérifier que l'utilisateur est admin
+        $user = auth()->user();
+        if ($user->role !== 'admin') {
+            return $this->errorResponse('Accès non autorisé - Réservé aux administrateurs', 403);
+        }
+
+        try {
+            // Refresh la base de données (drop all tables, recreate and migrate)
+            Artisan::call('migrate:fresh', ['--force' => true]);
+
+            // Exécuter les seeders
+            Artisan::call('db:seed', ['--force' => true]);
+
+            return $this->successResponse([
+                'migrations' => 'Base de données rafraîchie et migrations exécutées avec succès',
+                'seeders' => 'Seeders exécutés avec succès'
+            ], 'Base de données initialisée avec succès', 200);
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Erreur lors de l\'initialisation : ' . $e->getMessage(), 500);
+        }
+    }
+
     public function destroy($id)
     {
         $compte = CompteBancaire::withoutGlobalScopes()->find($id);
@@ -453,20 +543,19 @@ class CompteBancaireController extends Controller
             return $this->errorResponse('Compte bancaire non trouvé', 404);
         }
 
+        // Vérifier que le compte est actif avant suppression
+        if (!$compte->estActif()) {
+            return $this->errorResponse('Seuls les comptes actifs peuvent être supprimés', 400);
+        }
+
         // Vérifier les permissions d'accès
         $user = auth()->user();
         if ($user->role !== 'admin' && $compte->user_id !== $user->id) {
             return $this->errorResponse('Accès non autorisé à ce compte', 403);
         }
 
-        // Pour la suppression, on fait une suppression physique temporairement
-        // jusqu'à ce que la migration soft delete soit appliquée
-        try {
-            $compte->delete();
-        } catch (\Exception $e) {
-            // Si la colonne deleted_at n'existe pas, on fait une suppression physique
-            $compte->forceDelete();
-        }
+        // Supprimer le compte (soft delete)
+        $compte->delete();
 
         return $this->successResponse(
             null,
